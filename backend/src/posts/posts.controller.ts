@@ -54,7 +54,7 @@ export class PostsController {
     if (file && file.size > 5 * 1024 * 1024) {
       throw new HttpException('File size exceeds 5MB limit', HttpStatus.BAD_REQUEST);
     }
-    const backendUrl = this.configService.get('BACKEND_URL') || 'http://localhost:3001';
+    const backendUrl = this.configService.get('BACKEND_URL') || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3001';
     const imageUrl = file ? `${backendUrl}/uploads/${file.filename}` : undefined;
     return this.postsService.createPost(
       req.user.id,

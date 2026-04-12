@@ -20,21 +20,29 @@ async function bootstrap() {
   app.useGlobalFilters();
   
   const frontendUrl = configService.get('FRONTEND_URL') || 'https://selection-task-full-stack-engineer.vercel.app';
-  const renderUrl = 'https://selectiontask-fullstack-engineer.onrender.com';
+  const renderExternalUrl = process.env.RENDER_EXTERNAL_URL || 'https://selectiontask-fullstack-engineer.onrender.com';
   const allowedOrigins = configService.get('ALLOWED_ORIGINS')?.split(',') || [
     frontendUrl, 
-    renderUrl, 
+    renderExternalUrl, 
     'http://localhost:3000', 
     'http://localhost:3001'
   ];
 
   console.log('CORS allowed origins:', allowedOrigins);
+  console.log('Backend URL:', renderExternalUrl);
   
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(null, true);
+      }
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Referer', 'Origin'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Referer', 'Origin', 'X-Requested-With'],
     maxAge: 86400,
   });
   
