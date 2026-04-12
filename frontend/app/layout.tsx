@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/auth-context'
 export const metadata: Metadata = {
   title: 'SocialApp - Create account or log in',
   description: 'Connect with friends and share your thoughts on SocialApp',
+  referrerPolicy: 'strict-origin-when-cross-origin',
 }
 
 export default function RootLayout({
