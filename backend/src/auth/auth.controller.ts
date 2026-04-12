@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, UseGuards, Request, Logger } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { RegisterDto, LoginDto, RefreshTokenDto } from './dto/auth.dto';
+import { RegisterDto, LoginDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -18,7 +18,6 @@ export class AuthController {
         body.lastName,
         body.email,
         body.password,
-        body.country,
       );
     } catch (error) {
       this.logger.error(`Registration failed: ${error.message}`, error.stack);
@@ -32,14 +31,14 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refresh(@Body() body: RefreshTokenDto) {
-    return this.authService.refreshToken(body.refreshToken);
+  async refresh(@Request() req) {
+    return this.authService.refreshToken(req.user.id, req.user.email);
   }
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
-  async logout(@Request() req, @Body() body: RefreshTokenDto) {
-    return this.authService.logout(body.refreshToken);
+  async logout() {
+    return this.authService.logout();
   }
 
   @UseGuards(JwtAuthGuard)

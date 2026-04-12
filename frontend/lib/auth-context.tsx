@@ -36,11 +36,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = Cookies.get('token');
-      const storedRefreshToken = Cookies.get('refreshToken');
       
       if (storedToken) {
         try {
-          // Immediately set header for the first request
           api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
           const response = await authAPI.getMe();
           setState({
@@ -54,16 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             loading: false,
           });
         } catch (err) {
-          if (storedRefreshToken) {
-            await refreshAccessToken(storedRefreshToken);
-          } else {
-            console.error('Initial auth validation failed');
-            Cookies.remove('token');
-            setState({ token: null, user: null, loading: false });
-          }
+          console.error('Initial auth validation failed');
+          Cookies.remove('token');
+          setState({ token: null, user: null, loading: false });
         }
-      } else if (storedRefreshToken) {
-        await refreshAccessToken(storedRefreshToken);
       } else {
         setState(prev => ({ ...prev, loading: false }));
       }
@@ -72,56 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  const refreshAccessToken = async (refreshToken: string) => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const cookieOptions = { expires: 1/24, path: '/', sameSite: 'Lax', secure: process.env.NODE_ENV === 'production' } as const;
-        Cookies.set('token', data.accessToken, cookieOptions);
-        Cookies.set('refreshToken', data.refreshToken, { ...cookieOptions, expires: 7 });
-        
-        // Update live API instance
-        api.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
-
-        setState({
-          token: data.accessToken,
-          user: {
-            id: data.user.id,
-            firstName: data.user.firstName,
-            lastName: data.user.lastName,
-            email: data.user.email,
-          },
-          loading: false,
-        });
-      } else {
-        Cookies.remove('token');
-        Cookies.remove('refreshToken');
-        delete api.defaults.headers.common['Authorization'];
-        setState({ token: null, user: null, loading: false });
-      }
-    } catch {
-      Cookies.remove('token');
-      Cookies.remove('refreshToken');
-      delete api.defaults.headers.common['Authorization'];
-      setState({ token: null, user: null, loading: false });
-    }
-  };
-
   const login = async (email: string, password: string) => {
     try {
       const response = await authAPI.login({ email, password });
-      const { accessToken, refreshToken, user: userData } = response.data;
+      const { accessToken, user: userData } = response.data;
       
       const cookieOptions = { expires: 1/24, path: '/', sameSite: 'Lax', secure: process.env.NODE_ENV === 'production' } as const;
       Cookies.set('token', accessToken, cookieOptions);
-      Cookies.set('refreshToken', refreshToken, { ...cookieOptions, expires: 7 });
       
-      // IMPORTANT: Immediately set the Authorization header for subsequent calls on this same page render
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
       setState({
@@ -143,13 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (firstName: string, lastName: string, email: string, password: string) => {
     try {
       const response = await authAPI.register({ firstName, lastName, email, password });
-      const { accessToken, refreshToken, user: userData } = response.data;
+      const { accessToken, user: userData } = response.data;
       
       const cookieOptions = { expires: 1/24, path: '/', sameSite: 'Lax', secure: process.env.NODE_ENV === 'production' } as const;
       Cookies.set('token', accessToken, cookieOptions);
-      if (refreshToken) {
-        Cookies.set('refreshToken', refreshToken, { ...cookieOptions, expires: 7 });
-      }
       
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
@@ -171,14 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      const refreshToken = Cookies.get('refreshToken');
-      if (refreshToken) {
-        await authAPI.logout();
-      }
+      await authAPI.logout();
     } catch {
     } finally {
       Cookies.remove('token');
-      Cookies.remove('refreshToken');
       delete api.defaults.headers.common['Authorization'];
       setState({ token: null, user: null, loading: false });
     }

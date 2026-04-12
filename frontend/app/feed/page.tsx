@@ -9,14 +9,14 @@ import Link from 'next/link';
 interface PostData {
   id: string;
   content: string;
-  image_url?: string;
+  imageUrl?: string;
   privacy: 'public' | 'private';
   user: {
     id: string;
     first_name: string;
     last_name: string;
   };
-  created_at: string;
+  createdAt: string;
   likesCount?: number;
   isLiked?: boolean;
   likers?: Array<any>;
@@ -31,7 +31,7 @@ interface CommentData {
     first_name: string;
     last_name: string;
   };
-  created_at: string;
+  createdAt: string;
   likesCount?: number;
   isLiked?: boolean;
   likers?: Array<any>;
@@ -46,7 +46,7 @@ interface ReplyData {
     first_name: string;
     last_name: string;
   };
-  created_at: string;
+  createdAt: string;
   likesCount?: number;
   isLiked?: boolean;
   likers?: Array<any>;
@@ -182,9 +182,7 @@ export default function FeedPage() {
     if (action === 'like' && isCurrentlyLiked) return;
     if (action === 'unlike' && !isCurrentlyLiked) return;
 
-    // If action is provided, we use it directly; otherwise we toggle (the main button's behavior)
     const wantLiked = action === 'like' ? true : (action === 'unlike' ? false : !isCurrentlyLiked);
-
 
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
@@ -205,27 +203,22 @@ export default function FeedPage() {
     try {
       const response = await postsAPI.likePost(postId, action);
 
-      // Handle both nested and flat response structures
       let likedValue: boolean;
       let countValue: number;
 
-      if (response.data && typeof response.data === 'object') {
-        // Check if response.data has liked property directly
+if (response.data && typeof response.data === 'object') {
         if ('liked' in response.data) {
           likedValue = response.data.liked;
           countValue = response.data.count || 0;
         } else {
-          // Fallback: use the action to determine the liked value
           likedValue = action === 'unlike' ? false : (action === 'like' ? true : false);
           countValue = 0;
         }
       } else {
-        // Fallback
         likedValue = action === 'unlike' ? false : (action === 'like' ? true : false);
         countValue = 0;
       }
 
-      // Force update to ensure it's reflected in UI
       setPosts(prev => {
         const updated = prev.map(p => {
           if (p.id === postId) {
@@ -447,14 +440,20 @@ export default function FeedPage() {
   };
 
   const formatTimeAgo = (createdAt: string) => {
+    if (!createdAt) return '';
+    
     const now = new Date();
     const postDate = new Date(createdAt);
+    
+    if (isNaN(postDate.getTime())) return '';
+    
     const diffMs = now.getTime() - postDate.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+    const diffSecs = Math.floor(Math.abs(diffMs) / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'now';
+    if (diffSecs < 60) return 'now';
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
@@ -897,7 +896,7 @@ export default function FeedPage() {
                                 <div className="_feed_inner_timeline_post_box_txt">
                                   <h4 className="_feed_inner_timeline_post_box_title">{post.user.first_name} {post.user.last_name}</h4>
                                   <p className="_feed_inner_timeline_post_box_para">
-                                    {formatTimeAgo(post.created_at)} . <span>{post.privacy === 'public' ? 'Public' : 'Private'}</span>
+                                    {formatTimeAgo(post.createdAt)} . <span>{post.privacy === 'public' ? 'Public' : 'Private'}</span>
                                   </p>
                                 </div>
                               </div>
@@ -905,9 +904,9 @@ export default function FeedPage() {
                             <div className="_feed_inner_timeline_post_title" style={{ margin: '15px 0', fontSize: '16px', color: '#000' }}>
                               {post.content}
                             </div>
-                            {post.image_url && (
+                            {post.imageUrl && (
                               <div className="_feed_inner_timeline_image">
-                                <img src={post.image_url} alt="Post" style={{ width: '100%', borderRadius: '6px' }} />
+                                <img src={post.imageUrl} alt="Post" style={{ width: '100%', borderRadius: '6px' }} />
                               </div>
                             )}
                           </div>
@@ -1160,7 +1159,7 @@ export default function FeedPage() {
                                             </svg>
                                             Reply ({comment.repliesCount || 0})
                                           </li>
-                                          <li>{formatTimeAgo(comment.created_at)}</li>
+                                          <li>{formatTimeAgo(comment.createdAt)}</li>
                                         </ul>
                                         {comment.likers && comment.likers.length > 0 && (
                                           <p 
@@ -1263,7 +1262,7 @@ export default function FeedPage() {
                                                       {reply.isLiked ? 'Liked' : 'Unliked'}
                                                     </span>
                                                   </span>
-                                                  <span>{formatTimeAgo(reply.created_at)}</span>
+                                                    <span>{formatTimeAgo(reply.createdAt)}</span>
                                                 </div>
                                                 {reply.likers && reply.likers.length > 0 && (
                                                   <p 

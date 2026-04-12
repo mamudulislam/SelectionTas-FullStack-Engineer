@@ -1,9 +1,20 @@
 import { Injectable, CanActivate, ExecutionContext, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { SupabaseService } from '../supabase/supabase.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Post } from '../posts/entities/post.entity';
+import { Comment } from '../posts/entities/comment.entity';
+import { Reply } from '../posts/entities/reply.entity';
 
 @Injectable()
 export class OwnershipGuard implements CanActivate {
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(
+    @InjectRepository(Post)
+    private postRepository: Repository<Post>,
+    @InjectRepository(Comment)
+    private commentRepository: Repository<Comment>,
+    @InjectRepository(Reply)
+    private replyRepository: Repository<Reply>,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -16,38 +27,23 @@ export class OwnershipGuard implements CanActivate {
     if (!user) return false;
 
     if (replyId) {
-      const { data, error } = await this.supabaseService.client
-        .from('replies')
-        .select('user_id')
-        .eq('id', replyId)
-        .single();
-      
-      if (error || !data) throw new NotFoundException('Reply not found');
-      if (data.user_id !== user.id) throw new ForbiddenException('You do not own this reply');
+      const reply = await this.replyRepository.findOne({ where: { id: replyId } });
+      if (!reply) throw new NotFoundException('Reply not found');
+      if (reply.authorId !== user.id) throw new ForbiddenException('You do not own this reply');
       return true;
     }
 
     if (commentId) {
-      const { data, error } = await this.supabaseService.client
-        .from('comments')
-        .select('user_id')
-        .eq('id', commentId)
-        .single();
-      
-      if (error || !data) throw new NotFoundException('Comment not found');
-      if (data.user_id !== user.id) throw new ForbiddenException('You do not own this comment');
+      const comment = await this.commentRepository.findOne({ where: { id: commentId } });
+      if (!comment) throw new NotFoundException('Comment not found');
+      if (comment.authorId !== user.id) throw new ForbiddenException('You do not own this comment');
       return true;
     }
 
     if (postId) {
-      const { data, error } = await this.supabaseService.client
-        .from('posts')
-        .select('user_id')
-        .eq('id', postId)
-        .single();
-      
-      if (error || !data) throw new NotFoundException('Post not found');
-      if (data.user_id !== user.id) throw new ForbiddenException('You do not own this post');
+      const post = await this.postRepository.findOne({ where: { id: postId } });
+      if (!post) throw new NotFoundException('Post not found');
+      if (post.authorId !== user.id) throw new ForbiddenException('You do not own this post');
       return true;
     }
 

@@ -32,6 +32,6 @@ export class Comment {
   @OneToMany(() => Reply, (reply) => reply.comment, { cascade: true, eager: true })
   replies: Reply[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

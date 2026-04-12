@@ -28,6 +28,6 @@ export class Reply {
   @OneToMany(() => Like, (like) => like.reply, { cascade: true, eager: true })
   likes: Like[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

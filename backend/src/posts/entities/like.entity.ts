@@ -32,6 +32,6 @@ export class Like {
   @ManyToOne(() => Reply, (reply) => reply.likes, { onDelete: 'CASCADE' })
   reply: Reply;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

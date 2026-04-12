@@ -2,10 +2,17 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {
     const secret = configService.get<string>('JWT_SECRET');
     if (!secret) {
       throw new Error('JWT_SECRET environment variable is required');
@@ -17,21 +24,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  // To prevent the 401 redirect loop, we trust the information in the cryptographically verified payload
-  // instead of crashing if the database profile lookup has a momentary delay.
   async validate(payload: any) {
     if (!payload || !payload.sub) {
       throw new UnauthorizedException('Invalid token payload');
     }
     
-    // Return a basic user object from the token payload immediately
-    // This allows the request to proceed. Guards on specific endpoints can do deeper checks.
+    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    
     return {
-      id: payload.sub,
-      email: payload.email,
-      // Provide fallbacks for name if needed, though usually fetched from DB on the page
-      firstName: '',
-      lastName: '',
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
     };
   }
 }

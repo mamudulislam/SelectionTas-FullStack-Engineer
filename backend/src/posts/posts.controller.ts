@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, Inject, Query, ParseUUIDPipe, PayloadTooLargeException } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, UploadedFile, UseInterceptors, Inject, Query, ParseUUIDPipe, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -39,11 +39,11 @@ export class PostsController {
       if (ext && mime) {
         cb(null, true);
       } else {
-        cb(new Error('Only image files are allowed'), false);
+        cb(new Error('Invalid file type. Only JPEG, JPG, PNG, GIF, and WebP images are allowed.'), false);
       }
     },
     limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB limit
+      fileSize: 5 * 1024 * 1024,
     },
   }))
   async createPost(
@@ -51,6 +51,9 @@ export class PostsController {
     @Body() body: CreatePostDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    if (file && file.size > 5 * 1024 * 1024) {
+      throw new HttpException('File size exceeds 5MB limit', HttpStatus.BAD_REQUEST);
+    }
     const backendUrl = this.configService.get('BACKEND_URL') || 'http://localhost:3001';
     const imageUrl = file ? `${backendUrl}/uploads/${file.filename}` : undefined;
     return this.postsService.createPost(
@@ -73,7 +76,8 @@ export class PostsController {
     @Param('postId', ParseUUIDPipe) postId: string,
     @Request() req,
   ) {
-    return this.postsService.likePost(postId, req.user.id, 'like');
+    const userName = `${req.user.firstName} ${req.user.lastName}`;
+    return this.postsService.likePost(postId, req.user.id, userName, 'like');
   }
 
   @Post(':postId/unlike')
@@ -81,7 +85,8 @@ export class PostsController {
     @Param('postId', ParseUUIDPipe) postId: string,
     @Request() req,
   ) {
-    return this.postsService.likePost(postId, req.user.id, 'unlike');
+    const userName = `${req.user.firstName} ${req.user.lastName}`;
+    return this.postsService.likePost(postId, req.user.id, userName, 'unlike');
   }
 
   @Post(':postId/comments')
@@ -103,7 +108,8 @@ export class PostsController {
     @Param('commentId', ParseUUIDPipe) commentId: string,
     @Request() req,
   ) {
-    return this.postsService.likeComment(commentId, req.user.id, 'like');
+    const userName = `${req.user.firstName} ${req.user.lastName}`;
+    return this.postsService.likeComment(commentId, req.user.id, userName, 'like');
   }
 
   @Post(':postId/comments/:commentId/unlike')
@@ -111,7 +117,8 @@ export class PostsController {
     @Param('commentId', ParseUUIDPipe) commentId: string,
     @Request() req,
   ) {
-    return this.postsService.likeComment(commentId, req.user.id, 'unlike');
+    const userName = `${req.user.firstName} ${req.user.lastName}`;
+    return this.postsService.likeComment(commentId, req.user.id, userName, 'unlike');
   }
 
   @Post(':postId/comments/:commentId/replies')
@@ -125,6 +132,7 @@ export class PostsController {
       postId,
       commentId,
       req.user.id,
+      { firstName: req.user.firstName, lastName: req.user.lastName },
       body.content,
     );
   }
@@ -134,7 +142,8 @@ export class PostsController {
     @Param('replyId', ParseUUIDPipe) replyId: string,
     @Request() req,
   ) {
-    return this.postsService.likeReply(replyId, req.user.id, 'like');
+    const userName = `${req.user.firstName} ${req.user.lastName}`;
+    return this.postsService.likeReply(replyId, req.user.id, userName, 'like');
   }
 
   @Post(':postId/comments/:commentId/replies/:replyId/unlike')
@@ -142,7 +151,8 @@ export class PostsController {
     @Param('replyId', ParseUUIDPipe) replyId: string,
     @Request() req,
   ) {
-    return this.postsService.likeReply(replyId, req.user.id, 'unlike');
+    const userName = `${req.user.firstName} ${req.user.lastName}`;
+    return this.postsService.likeReply(replyId, req.user.id, userName, 'unlike');
   }
 
   @Get(':postId/comments')
