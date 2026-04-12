@@ -19,7 +19,7 @@ async function bootstrap() {
   
   app.useGlobalFilters();
   
-  const frontendUrl = configService.get('FRONTEND_URL') || 'http://localhost:3000';
+  const frontendUrl = configService.get('FRONTEND_URL') || 'http://localhost:3000' || 'https://selection-task-full-stack-engineer.vercel.app/';
   const allowedOrigins = configService.get('ALLOWED_ORIGINS')?.split(',') || [frontendUrl];
   
   app.enableCors({
