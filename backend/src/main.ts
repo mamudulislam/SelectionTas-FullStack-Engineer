@@ -19,7 +19,7 @@ async function bootstrap() {
   
   app.useGlobalFilters();
   
-  const frontendUrl = configService.get('FRONTEND_URL') || 'https://selection-task-full-stack-engineer.vercel.app'||'https://radiant-capybara-474322.netlify.app/';
+  const frontendUrl = configService.get('FRONTEND_URL') || 'https://selection-task-full-stack-engineer.vercel.app'||'https://radiant-capybara-474322.netlify.app';
   const renderUrl = 'https://selectiontask-fullstack-engineer.onrender.com';
   const allowedOrigins = configService.get('ALLOWED_ORIGINS')?.split(',') || [frontendUrl, renderUrl, 'http://localhost:3000', 'http://localhost:3001'];
 
